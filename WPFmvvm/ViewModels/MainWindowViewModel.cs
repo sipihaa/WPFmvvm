@@ -79,6 +79,13 @@ namespace WPFmvvm.ViewModels
 
         #endregion
 
+        public IEnumerable<Student> TestStudents => Enumerable.Range(1, App.IsDesignMode ? 10 : 100_000)
+            .Select(i => new Student()
+            {
+                Surname = "Eblanov",
+                Name = $"Ueban {i}"
+            });
+
         /*------------------------------------------------------------------------*/
 
         #region Команды
