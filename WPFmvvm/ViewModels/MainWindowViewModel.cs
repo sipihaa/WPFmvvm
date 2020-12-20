@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Input;
 using WPFmvvm.Infrastructure.Commands;
-using WPFmvvm.Models;
 using WPFmvvm.Models.Decant;
 using WPFmvvm.ViewModels.Base;
 
@@ -34,14 +35,69 @@ namespace WPFmvvm.ViewModels
         public Group SelectedGroup
         {
             get => _SelectedGroup;
-            set => Set(ref _SelectedGroup, value);
+            set
+            {
+                if (!Set(ref _SelectedGroup, value)) return;
+
+                _SelectedGroupStudents.Source = value?.Students;
+                OnPropertyChanged(nameof(SelectedGroupStudents));
+            }
+        }
+
+        #endregion
+
+        #region StudentFilterText
+
+        private string _StudentFilterText;
+
+        public string StudentFilterText
+        {
+            get => _StudentFilterText;
+            set
+            {
+                if (!Set(ref _StudentFilterText, value)) return;
+                _SelectedGroupStudents.View.Refresh();
+            }
+        }
+
+        #endregion
+
+        #region Студенты выбранной группы
+
+        private readonly CollectionViewSource _SelectedGroupStudents = new CollectionViewSource();
+
+        public ICollectionView SelectedGroupStudents => _SelectedGroupStudents?.View;
+
+        private void OnStudentFiltered(object sender, FilterEventArgs e)
+        {
+            if (!(e.Item is Student student))
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            var filter_text = _StudentFilterText;
+            if (string.IsNullOrWhiteSpace(filter_text))
+                return;
+
+            if (student.Name is null || student.Surname is null || student.Patronymic is null)
+            {
+                e.Accepted = false;
+                return;
+            }
+
+            if (student.Name.Contains(filter_text, StringComparison.OrdinalIgnoreCase)) return;
+            if (student.Surname.Contains(filter_text, StringComparison.OrdinalIgnoreCase)) return;
+            if (student.Patronymic.Contains(filter_text, StringComparison.OrdinalIgnoreCase)) return;
+
+            e.Accepted = false;
         }
 
         #endregion
 
         #region Номер выбранной вкладки
 
-        private int _SelectedPageIndex;
+        private int _SelectedPageIndex = 1;
 
         public int SelectedPageIndex { get => _SelectedPageIndex; set => Set(ref _SelectedPageIndex, value); }
 
@@ -49,9 +105,9 @@ namespace WPFmvvm.ViewModels
 
         #region График
 
-        private IEnumerable<DataPoint> _DataPoints;
+        private IEnumerable<Models.DataPoint> _DataPoints;
 
-        public IEnumerable<DataPoint> DataPoints { get => _DataPoints; set => Set(ref _DataPoints, value); }
+        public IEnumerable<Models.DataPoint> DataPoints { get => _DataPoints; set => Set(ref _DataPoints, value); }
 
         #endregion
 
@@ -174,26 +230,26 @@ namespace WPFmvvm.ViewModels
 
             #endregion
 
-
-            var data_points = new List<DataPoint>((int)(360 / 0.1));
+            var data_points = new List<Models.DataPoint>((int)(360 / 0.1));
             for (var x = 0d; x <= 360; x += 0.1)
             {
                 const double to_rad = Math.PI / 180;
                 var y = Math.Sin(x * to_rad);
 
-                data_points.Add(new DataPoint { XValue = x, YValue = y });
+                data_points.Add(new Models.DataPoint { XValue = x, YValue = y });
             }
 
             DataPoints = data_points;
 
+            var student_index = 1;
             var students = Enumerable.Range(1, 10).Select(i => new Student
             {
-                Name = $"Name {i}",
-                Surname = $"Surname {i}",
-                Patronymic = $"Patronymic {i}",
+                Name = $"Name {student_index}",
+                Surname = $"Surname {student_index}",
+                Patronymic = $"Patronymic {student_index}",
                 Birthday = DateTime.Now,
                 Rating = 0,
-                Description = $"Ученик {i}"
+                Description = $"Ученик {student_index++}"
             });
 
             var groups = Enumerable.Range(1, 20).Select(i => new Group
@@ -206,7 +262,6 @@ namespace WPFmvvm.ViewModels
             Groups = new ObservableCollection<Group>(groups);
 
 
-            // ReSharper disable once UseObjectOrCollectionInitializer
             var data_list = new List<object>();
 
             data_list.Add("Hello world!");
@@ -216,6 +271,8 @@ namespace WPFmvvm.ViewModels
             data_list.Add(group.Students[0]);
 
             CompositeCollection = data_list.ToArray();
+
+            _SelectedGroupStudents.Filter += OnStudentFiltered;
         }
     }
 }

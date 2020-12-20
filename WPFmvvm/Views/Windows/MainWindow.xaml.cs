@@ -16,7 +16,7 @@ namespace WPFmvvm.Views.Windows
             InitializeComponent();
         }
 
-        private void GroupsCollection_OnFilter(object sender, System.Windows.Data.FilterEventArgs e)
+        private void GroupsCollection_OnFilter(object sender, FilterEventArgs e)
         {
             if (!(e.Item is Group group)) return;
             if (group.Name is null) return;

@@ -9,6 +9,7 @@
         xmlns:decant="clr-namespace:WPFmvvm.Models.Decant"
         xmlns:l="clr-namespace:WPFmvvm"
         xmlns:system="clr-namespace:System;assembly=System.Runtime"
+        xmlns:cm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         Title="{Binding Title}" Height="600" Width="971">
     <Window.InputBindings>
         <KeyBinding Modifiers="Ctrl" Key="Q" Command="{Binding CloseApplicationCommand}"/>
@@ -52,10 +53,16 @@
             </StatusBarItem>
         </StatusBar>
         <TabControl SelectedIndex="{Binding SelectedPageIndex}">
-            <TabItem Header="Тестирование визуализации">
+            <TabItem Header="Тестирование визуализации" Visibility="Collapsed">
                 <Grid>
                     <TextBlock Text="{Binding Source={x:Static l:App.IsDesignMode}}"/>
-                    <ListBox HorizontalAlignment="Left" Width="200" Margin="30" ItemsSource="{Binding TestStudents}">
+                    <ListBox HorizontalAlignment="Left" Width="200" Margin="30" ItemsSource="{Binding TestStudents}" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                             VirtualizingPanel.IsContainerVirtualizable="True">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
                                 <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -65,7 +72,7 @@
                             <DataTemplate DataType="decant:Student">
                                 <Border BorderBrush="Blue" CornerRadius="3" Padding="3">
                                     <Border.CacheMode>
-                                        <BitmapCache/>
+                                        <BitmapCache RenderAtScale="2"/>
                                     </Border.CacheMode>
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}"/>
@@ -87,7 +94,14 @@
                     <GroupBox Header="Группы" Grid.Column="0" Grid.ColumnSpan="2">
                         <DockPanel>
                             <DockPanel.Resources>
-                                <CollectionViewSource x:Key="GroupsCollection" Source="{Binding Groups}" Filter="GroupsCollection_OnFilter"/>
+                                <CollectionViewSource x:Key="GroupsCollection" Source="{Binding Groups}" Filter="GroupsCollection_OnFilter">
+                                    <CollectionViewSource.SortDescriptions>
+                                        <cm:SortDescription PropertyName="Name" Direction="Descending"/>
+                                    </CollectionViewSource.SortDescriptions>
+                                    <CollectionViewSource.GroupDescriptions>
+                                        <PropertyGroupDescription PropertyName="Students.Count"/>
+                                    </CollectionViewSource.GroupDescriptions>
+                                </CollectionViewSource>
                             </DockPanel.Resources>
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,3">
                                 <!--<TextBlock Text="Фильтр: "/>-->
@@ -148,25 +162,28 @@
                             <DockPanel DockPanel.Dock="Top">
                                 <!--<TextBlock Text="Фильтр: "/>-->
                                 <fa:ImageAwesome Height="12" Icon="Solid_Search" Margin="5,0"/>
-                                <TextBox/>
+                                <TextBox Text="{Binding StudentFilterText, UpdateSourceTrigger=PropertyChanged}"/>
                             </DockPanel>
-                            <DataGrid ItemsSource="{Binding SelectedGroup.Students}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False">
+                            <DataGrid ItemsSource="{Binding SelectedGroupStudents}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False">
+                                <DataGrid.GroupStyle>
+                                    <GroupStyle/>
+                                </DataGrid.GroupStyle>
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Фамилия" Binding="{Binding Surname}" Width="Auto" IsReadOnly="True"/>
-                                    <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="Auto" IsReadOnly="True"/>
-                                    <DataGridTextColumn Header="Отчество" Binding="{Binding Patronymic}" IsReadOnly="True"/>
-                                    <DataGridTextColumn Header="Рейтинг" Binding="{Binding Rating}" IsReadOnly="True"/>
-                                    <DataGridTemplateColumn Header="Дата рождения">
+                                    <DataGridTextColumn Header="Фамилия" Binding="{Binding Surname}" Width="Auto"/>
+                                    <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="Auto"/>
+                                    <DataGridTextColumn Header="Отчество" Binding="{Binding Patronymic}"/>
+                                    <DataGridTextColumn Header="Рейтинг" Binding="{Binding Rating}"/>
+                                    <DataGridTemplateColumn Header="Дата рождения">                                      
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate DataType="decant:Student">
                                                 <TextBlock Text="{Binding Birthday, StringFormat='dd.MM.yyyy'}"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
-                                        <DataGridTemplateColumn.CellEditingTemplate>
+                                        <!--<DataGridTemplateColumn.CellEditingTemplate>
                                             <DataTemplate DataType="decant:Student">
                                                 <DatePicker SelectedDate="{Binding Birthday}"/>
                                             </DataTemplate>
-                                        </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn.CellEditingTemplate>-->
                                     </DataGridTemplateColumn>
                                     <DataGridTextColumn Header="Заметки" Binding="{Binding Description}" Width="*"/>
                                 </DataGrid.Columns>
